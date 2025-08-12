@@ -1,3 +1,6 @@
+-e > [!IMPORTANT]
+> **This document outlines a proposed architectural solution.** The implementation code described herein is not yet present in this repository. This README serves as a technical plan and a vision for the project.
+
 
 # Integrated AR Visualization \& Virtual Showroom Solution for Windows-and-Doors
 
@@ -330,4 +333,3 @@ Deploy this stack and you deliver an end-to-end, future-proof sales platform whe
 [^95]: https://developers.google.com/ar/reference
 
 [^96]: https://www.pulpstrategy.com/virtual-stores
-
