@@ -1,0 +1,31 @@
+name: backend-ci
+
+on:
+  push:
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend.yml'
+  pull_request:
+    paths:
+      - 'backend/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+      - name: Restore
+        run: dotnet restore backend/CadViewer.sln
+      - name: Build
+        run: dotnet build backend/CadViewer.sln -c Release --no-restore
+      - name: Publish
+        run: dotnet publish backend/CadViewer.Api/CadViewer.Api.csproj -c Release -o out
+      - name: Build Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: backend
+          push: false
+          tags: mycadviewer/backend:ci
