@@ -10,6 +10,7 @@ import { Component, EventEmitter, Output } from '@angular/core';
     <button (click)="section.emit()">Section</button>
     <button (click)="toggleOrtho.emit()">Ortho</button>
     <button (click)="toggleWire.emit()">Wire</button>
+    <button (click)="downloadSvg.emit()">SVG</button>
   </div>
   `
 })
@@ -19,6 +20,7 @@ export class ToolbarComponent {
   @Output() section = new EventEmitter<void>();
   @Output() toggleOrtho = new EventEmitter<void>();
   @Output() toggleWire = new EventEmitter<void>();
+  @Output() downloadSvg = new EventEmitter<void>();
 
   onFile(ev: Event) {
     const input = ev.target as HTMLInputElement;

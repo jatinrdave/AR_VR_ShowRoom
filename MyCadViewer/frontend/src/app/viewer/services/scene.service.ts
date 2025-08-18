@@ -6,10 +6,12 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 export class SceneService {
   private renderer!: THREE.WebGLRenderer;
   private scene!: THREE.Scene;
-  private camera!: THREE.PerspectiveCamera;
+  private perspCamera!: THREE.PerspectiveCamera;
   private orthoCamera!: THREE.OrthographicCamera;
+  private currentCamera!: THREE.Camera;
   private controls!: OrbitControls;
   private animationId: number | null = null;
+  private useOrtho = false;
 
   constructor(private zone: NgZone) {}
 
@@ -24,17 +26,21 @@ export class SceneService {
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x0f0f10);
 
-    this.camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 5000);
-    this.camera.position.set(5, 5, 5);
+    this.perspCamera = new THREE.PerspectiveCamera(60, width / height, 0.1, 5000);
+    this.perspCamera.position.set(5, 5, 5);
 
     const aspect = width / height;
     const frustum = 5;
     this.orthoCamera = new THREE.OrthographicCamera(-frustum*aspect, frustum*aspect, frustum, -frustum, 0.1, 5000);
+    this.orthoCamera.position.set(5, 5, 5);
+    this.orthoCamera.lookAt(0, 0, 0);
+
+    this.currentCamera = this.perspCamera;
 
     const light = new THREE.HemisphereLight(0xffffff, 0x222244, 1.0);
     this.scene.add(light);
 
-    this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+    this.controls = new OrbitControls(this.currentCamera, this.renderer.domElement);
     this.controls.enableDamping = true;
 
     window.addEventListener('resize', this.onResize);
@@ -45,16 +51,39 @@ export class SceneService {
   private animate = () => {
     this.animationId = requestAnimationFrame(this.animate);
     this.controls.update();
-    this.renderer.render(this.scene, this.camera);
+    this.renderer.render(this.scene, this.currentCamera);
   };
 
-  add(object: THREE.Object3D) {
-    this.scene.add(object);
+  private updateCamerasForSize(width: number, height: number) {
+    this.perspCamera.aspect = width / height;
+    this.perspCamera.updateProjectionMatrix();
+    const aspect = width / height;
+    const frustum = 5;
+    this.orthoCamera.left = -frustum * aspect;
+    this.orthoCamera.right = frustum * aspect;
+    this.orthoCamera.top = frustum;
+    this.orthoCamera.bottom = -frustum;
+    this.orthoCamera.updateProjectionMatrix();
   }
 
-  clear() {
-    this.scene.clear();
+  toggleOrtho() {
+    this.useOrtho = !this.useOrtho;
+    const next = this.useOrtho ? this.orthoCamera : this.perspCamera;
+    // keep target and position
+    next.position.copy((this.currentCamera as any).position);
+    next.quaternion.copy((this.currentCamera as any).quaternion);
+    this.currentCamera = next;
+    // rebind controls
+    this.controls.object = this.currentCamera as any;
+    this.controls.update();
   }
+
+  add(object: THREE.Object3D) { this.scene.add(object); }
+  clear() { this.scene.clear(); }
+
+  getScene(): THREE.Scene { return this.scene; }
+  getCamera(): THREE.Camera { return this.currentCamera; }
+  getRenderer(): THREE.WebGLRenderer { return this.renderer; }
 
   dispose() {
     window.removeEventListener('resize', this.onResize);
@@ -71,8 +100,7 @@ export class SceneService {
   private onResize = () => {
     const width = window.innerWidth;
     const height = window.innerHeight;
-    this.camera.aspect = width / height;
-    this.camera.updateProjectionMatrix();
+    this.updateCamerasForSize(width, height);
     this.renderer.setSize(width, height);
   };
 }

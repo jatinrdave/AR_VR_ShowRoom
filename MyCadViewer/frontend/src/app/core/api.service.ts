@@ -24,4 +24,8 @@ export class ApiService {
   getLayers(id: string) {
     return this.http.get<Array<{ name: string; color?: string; visible: boolean }>>(`${this.cfg.apiBaseUrl}/api/layers/${id}`);
   }
+
+  getSvg(id: string) {
+    return this.http.get(`${this.cfg.apiBaseUrl}/api/models/${id}/svg`, { responseType: 'text' });
+  }
 }

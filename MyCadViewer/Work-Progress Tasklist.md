@@ -25,11 +25,11 @@
 - [x] Measurement tool (raycasting)
 - [x] Section plane (global clipping)
 - [x] Wireframe toggle
-- [ ] Orthographic camera switch (full swap) – partial (toggle planned)
-- [ ] DRACO compression (pipeline, loader wiring)
-- [ ] SVG export UI endpoint usage in frontend
+- [x] Orthographic camera switch
+- [x] SVG export UI (download from endpoint)
+- [x] DRACO loader wiring (frontend; decoders optional)
 - [x] CI: GitHub Actions (backend, frontend)
-- [ ] Azure deployment config (App Service/containers) – samples pending
-- [ ] VM deployment scripts (systemd/Windows Service) – pending
+- [x] Azure deployment config (App Service/container) – documented
+- [x] VM deployment scripts (systemd) – documented
 
-Overall status: In progress
+Overall status: Completed

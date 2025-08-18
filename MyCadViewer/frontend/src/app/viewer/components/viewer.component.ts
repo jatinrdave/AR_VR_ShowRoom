@@ -16,7 +16,7 @@ import { ClippingService } from '../services/clipping.service';
   template: `
   <div class="canvas-container">
     <canvas #canvas3d></canvas>
-    <app-toolbar (upload)="onUpload($event)" (measure)="onMeasure()" (section)="onSection()" (toggleOrtho)="onToggleOrtho()" (toggleWire)="onToggleWire()"></app-toolbar>
+    <app-toolbar (upload)="onUpload($event)" (measure)="onMeasure()" (section)="onSection()" (toggleOrtho)="onToggleOrtho()" (toggleWire)="onToggleWire()" (downloadSvg)="onDownloadSvg()"></app-toolbar>
     <app-layer-panel [layers]="layers" (toggle)="onToggleLayer($event)"></app-layer-panel>
   </div>
   `,
@@ -35,10 +35,12 @@ export class ViewerComponent implements AfterViewInit, OnDestroy {
   layers: Array<{ name: string; color?: string; visible: boolean }> = [];
   private disposeMeasure?: () => void;
   private isWire = false;
-  private useOrtho = false;
+  private lastModelId: string | null = null;
 
   ngAfterViewInit(): void {
     this.sceneService.init(this.canvasRef.nativeElement);
+    const id = localStorage.getItem('lastModelId');
+    this.lastModelId = id;
     this.modelService.loadLatestIfAny(this.sceneService);
   }
 
@@ -50,13 +52,14 @@ export class ViewerComponent implements AfterViewInit, OnDestroy {
   onUpload(file: File) {
     this.api.upload(file).subscribe(({ id }) => {
       localStorage.setItem('lastModelId', id);
+      this.lastModelId = id;
       this.api.pollStatus(id).subscribe(status => {
         if (status.state === 'Completed') {
           this.modelService.loadGltf(id, this.sceneService);
           this.api.getLayers(id).subscribe(ls => {
             this.layersService.setLayers(ls);
             this.layers = ls;
-            this.layersService.applyToScene(this.sceneService['scene'] as any);
+            this.layersService.applyToScene(this.sceneService.getScene());
           });
         }
       });
@@ -65,21 +68,19 @@ export class ViewerComponent implements AfterViewInit, OnDestroy {
 
   onMeasure() {
     if (this.disposeMeasure) { this.disposeMeasure(); this.disposeMeasure = undefined; return; }
-    this.disposeMeasure = this.measureService.enable(this.canvasRef.nativeElement, (this.sceneService as any)['scene'], (this.sceneService as any)['camera']);
+    this.disposeMeasure = this.measureService.enable(this.canvasRef.nativeElement, this.sceneService.getScene(), this.sceneService.getCamera());
   }
 
-  onSection() {
-    this.clippingService.toggle((this.sceneService as any)['renderer']);
-  }
+  onSection() { this.clippingService.toggle(this.sceneService.getRenderer()); }
 
   onToggleLayer(name: string) {
-    this.layersService.toggleLayer(name, (this.sceneService as any)['scene']);
+    this.layersService.toggleLayer(name, this.sceneService.getScene());
     this.layers = this.layersService.getLayers();
   }
 
   onToggleWire() {
     this.isWire = !this.isWire;
-    (this.sceneService as any)['scene'].traverse((obj: any) => {
+    this.sceneService.getScene().traverse((obj: any) => {
       const mesh = obj as THREE.Mesh;
       const mat = mesh.material as THREE.Material | THREE.Material[];
       if (!mat) return;
@@ -88,8 +89,18 @@ export class ViewerComponent implements AfterViewInit, OnDestroy {
     });
   }
 
-  onToggleOrtho() {
-    this.useOrtho = !this.useOrtho;
-    // Simplified: toggling not fully switching camera instance here for brevity
+  onToggleOrtho() { this.sceneService.toggleOrtho(); }
+
+  onDownloadSvg() {
+    if (!this.lastModelId) return;
+    this.api.getSvg(this.lastModelId).subscribe(svg => {
+      const blob = new Blob([svg], { type: 'image/svg+xml' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${this.lastModelId}.svg`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
   }
 }

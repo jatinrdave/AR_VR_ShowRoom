@@ -25,6 +25,7 @@ Endpoints:
 - GET /api/models/{id}/gltf
 - GET /api/models/{id}/svg
 - DELETE /api/models/{id}
+- GET /api/layers/{id}
 
 ## Frontend
 
@@ -34,8 +35,47 @@ Requirements: Node 18+, Angular CLI 17
 - Run: `npm start` in `frontend/` (defaults to http://localhost:4200)
 - Configure API base URL in `frontend/src/environments/environment.ts`
 
+## Deployment
+
+### Azure App Service (Linux container)
+1. Build and push image:
+   - `docker build -t <ACR_NAME>.azurecr.io/mycad-backend:latest backend/`
+   - `docker push <ACR_NAME>.azurecr.io/mycad-backend:latest`
+2. Create App Service (Linux) with container and assign ACR permissions.
+3. Configure settings:
+   - `WEBSITES_PORT=80`
+   - `ASPNETCORE_ENVIRONMENT=Production`
+4. Optional: mount Azure File Share for persistent `data` if desired.
+
+### Linux VM (systemd)
+- Copy published backend to `/opt/mycad/backend`
+- Example unit file `/etc/systemd/system/mycadviewer.service`:
+```
+[Unit]
+Description=MyCadViewer Backend
+After=network.target
+
+[Service]
+WorkingDirectory=/opt/mycad/backend
+ExecStart=/usr/bin/dotnet CadViewer.Api.dll
+Restart=always
+RestartSec=5
+Environment=ASPNETCORE_ENVIRONMENT=Production
+User=www-data
+
+[Install]
+WantedBy=multi-user.target
+```
+- Enable and start:
+```
+sudo systemctl daemon-reload
+sudo systemctl enable mycadviewer
+sudo systemctl start mycadviewer
+```
+
 ## Notes
 
 - DXF parsed via netDxf, DWG via ACadSharp (lines only in MVP)
-- GLTF generated via SharpGLTF (lines)
+- GLTF generated via SharpGLTF (lines grouped by layer)
 - Background processing decouples upload from conversion
+- DRACO decoding supported on frontend if decoders are added to `src/assets/draco/`

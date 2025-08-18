@@ -1,0 +1,1 @@
+Place DRACO decoder files here (draco_decoder.js, draco_decoder.wasm, draco_wasm_wrapper.js) from the official three.js examples or Google Draco releases. The ModelService points to 'assets/draco/' by default.
