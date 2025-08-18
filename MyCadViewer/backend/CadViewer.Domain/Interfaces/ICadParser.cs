@@ -19,12 +19,14 @@ namespace CadViewer.Domain.Interfaces
     {
         Task StoreSourceAsync(ModelId id, Stream stream, string fileName, CancellationToken cancellationToken);
         Task<Stream> OpenSourceAsync(ModelId id, CancellationToken cancellationToken);
+        Task<string> ReadOriginalFileNameAsync(ModelId id, CancellationToken cancellationToken);
         Task StoreGltfAsync(ModelId id, byte[] data, CancellationToken cancellationToken);
         Task<Stream> OpenGltfAsync(ModelId id, CancellationToken cancellationToken);
         Task StoreSvgAsync(ModelId id, string svg, CancellationToken cancellationToken);
         Task<string> ReadSvgAsync(ModelId id, CancellationToken cancellationToken);
         Task StoreLayersAsync(ModelId id, IReadOnlyList<LayerInfo> layers, CancellationToken cancellationToken);
         Task<IReadOnlyList<LayerInfo>> ReadLayersAsync(ModelId id, CancellationToken cancellationToken);
+        Task<IReadOnlyList<(ModelId Id, string Name)>> ListModelsAsync(CancellationToken cancellationToken);
         Task DeleteAsync(ModelId id, CancellationToken cancellationToken);
     }
 

@@ -4,6 +4,7 @@ import { SceneService } from '../services/scene.service';
 import { ModelService } from '../services/model.service';
 import { ToolbarComponent } from './toolbar.component';
 import { LayerPanelComponent } from './layer-panel.component';
+import { ModelListComponent } from './model-list.component';
 import { ApiService } from '../../core/api.service';
 import { LayerService } from '../services/layer.service';
 import { MeasurementService } from '../services/measurement.service';
@@ -12,12 +13,13 @@ import { ClippingService } from '../services/clipping.service';
 @Component({
   selector: 'app-viewer',
   standalone: true,
-  imports: [ToolbarComponent, LayerPanelComponent],
+  imports: [ToolbarComponent, LayerPanelComponent, ModelListComponent],
   template: `
   <div class="canvas-container">
     <canvas #canvas3d></canvas>
     <app-toolbar (upload)="onUpload($event)" (measure)="onMeasure()" (section)="onSection()" (toggleOrtho)="onToggleOrtho()" (toggleWire)="onToggleWire()" (downloadSvg)="onDownloadSvg()"></app-toolbar>
     <app-layer-panel [layers]="layers" (toggle)="onToggleLayer($event)"></app-layer-panel>
+    <app-model-list (picked)="onPickModel($event)"></app-model-list>
   </div>
   `,
   styles: [``],
@@ -55,14 +57,21 @@ export class ViewerComponent implements AfterViewInit, OnDestroy {
       this.lastModelId = id;
       this.api.pollStatus(id).subscribe(status => {
         if (status.state === 'Completed') {
-          this.modelService.loadGltf(id, this.sceneService);
-          this.api.getLayers(id).subscribe(ls => {
-            this.layersService.setLayers(ls);
-            this.layers = ls;
-            this.layersService.applyToScene(this.sceneService.getScene());
-          });
+          this.loadModel(id);
         }
       });
+    });
+  }
+
+  onPickModel(id: string) { this.loadModel(id); }
+
+  private loadModel(id: string) {
+    this.lastModelId = id;
+    this.modelService.loadGltf(id, this.sceneService);
+    this.api.getLayers(id).subscribe(ls => {
+      this.layersService.setLayers(ls);
+      this.layers = ls;
+      this.layersService.applyToScene(this.sceneService.getScene());
     });
   }
 

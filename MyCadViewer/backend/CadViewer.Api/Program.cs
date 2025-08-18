@@ -85,6 +85,18 @@ if (app.Environment.IsDevelopment())
 	app.UseSwaggerUI();
 }
 
+app.MapGet("/api/models", async (IModelStorage storage, IJobStore jobs, CancellationToken ct) =>
+{
+	var list = await storage.ListModelsAsync(ct);
+	var items = new List<object>();
+	foreach (var (id, name) in list)
+	{
+		var job = await jobs.GetAsync(id, ct);
+		items.Add(new { id = id.ToString(), name, state = job?.State.ToString() ?? "Unknown" });
+	}
+	return Results.Ok(items);
+});
+
 app.MapPost("/api/models", async (HttpRequest request, IModelProcessingService service, CancellationToken ct) =>
 {
 	if (!request.HasFormContentType) return Results.BadRequest("multipart form required");

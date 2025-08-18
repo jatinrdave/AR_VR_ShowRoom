@@ -37,6 +37,11 @@ namespace CadViewer.Infrastructure.Storage
 			return Task.FromResult(s);
 		}
 
+		public async Task<string> ReadOriginalFileNameAsync(ModelId id, CancellationToken cancellationToken)
+		{
+			return await File.ReadAllTextAsync(NamePath(id), cancellationToken);
+		}
+
 		public Task StoreGltfAsync(ModelId id, byte[] data, CancellationToken cancellationToken)
 			=> File.WriteAllBytesAsync(GltfPath(id), data, cancellationToken);
 
@@ -72,6 +77,23 @@ namespace CadViewer.Infrastructure.Storage
 			var dir = GetDir(id);
 			if (Directory.Exists(dir)) Directory.Delete(dir, recursive: true);
 			return Task.CompletedTask;
+		}
+
+		public async Task<IReadOnlyList<(ModelId Id, string Name)>> ListModelsAsync(CancellationToken cancellationToken)
+		{
+			var result = new List<(ModelId, string)>();
+			if (!Directory.Exists(_rootPath)) return result;
+			foreach (var sub in Directory.EnumerateDirectories(_rootPath))
+			{
+				var nameFile = Path.Combine(sub, "name.txt");
+				var idText = Path.GetFileName(sub);
+				if (File.Exists(nameFile) && Domain.ValueObjects.ModelId.TryParse(idText, out var id))
+				{
+					var name = await File.ReadAllTextAsync(nameFile, cancellationToken);
+					result.Add((id, name));
+				}
+			}
+			return result;
 		}
 	}
 }
